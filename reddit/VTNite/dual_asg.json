@@ -1,0 +1,139 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Dual ASG template for reddit user built by /u/mittdev.",
+  "Parameters": {
+    "AMI1": {
+      "Description": "AMI to use for first application",
+      "Type": "AWS::EC2::Image::Id"
+    },
+    "AMI2": {
+      "Description": "AMI to use for second application",
+      "Type": "AWS::EC2::Image::Id"
+    },
+    "Subnets": {
+      "Description": "Subnets to put the AutoScaling Group in",
+      "Type": "List<AWS::EC2::Subnet::Id>"
+    },
+    "SecurityGroups": {
+      "Description": "Security Groups to use for AutoScaling Group",
+      "Type": "List<AWS::EC2::SecurityGroup::Id>"
+    },
+    "EC2KeyPair": {
+      "Description": "EC2 KeyPair to use for the AutoScaling Group",
+      "Type": "AWS::EC2::KeyPair::KeyName"
+    },
+    "InstanceType": {
+      "Description": "Instance Type to use for AutoScaling Groups",
+      "Type": "String",
+      "Default" : "t2.micro",
+      "AllowedValues" : [ "t2.micro", "t2.small", "t2.medium", "t2.large", "m3.medium", "m3.large", "m3.xlarge", "m3.2xlarge",
+        "m4.large", "m4.xlarge", "m4.2xlarge", "m4.4xlarge", "m4.10xlarge", "c3.large", "c3.xlarge", "c3.2xlarge", "c3.4xlarge", "c3.8xlarge",
+        "c4.large", "c4.xlarge", "c4.2xlarge", "c4.4xlarge", "c4.8xlarge", "r3.large", "r3.xlarge", "r3.2xlarge", "r3.4xlarge", "r3.8xlarge",
+        "i2.xlarge", "i2.2xlarge", "i2.4xlarge", "i2.8xlarge", "d2.xlarge", "d2.2xlarge", "d2.4xlarge", "d2.8xlarge",
+        "hi1.4xlarge", "hs1.8xlarge", "cr1.8xlarge", "cc2.8xlarge"],
+      "ConstraintDescription" : "Must be a valid EC2 instance type."
+    },
+    "MaxInstanceCount": {
+      "Description": "Maximum number of EC2 instances in the ASG.",
+      "Type": "Number",
+      "Default": "2",
+      "MinValue": "0",
+      "MaxValue": "10000",
+      "ConstraintDescription" : "Must be a integer between 0 and 10,000 and larger than MinInstanceCount."
+    },
+    "MinInstanceCount": {
+      "Description": "Minimum number of EC2 instances in the ASG.",
+      "Type": "Number",
+      "Default": "2",
+      "MinValue": "0",
+      "MaxValue": "1000",
+      "ConstraintDescription" : "Must be a integer between 0 and 1,000 and smaller than MaxInstanceCount."
+    }
+  },
+  "Mappings": {
+  },
+  "Conditions": {
+  },
+  "Resources": {
+    "LaunchConfig1": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "AssociatePublicIpAddress": { "Ref": "AWS::NoValue" },
+        "ImageId": { "Ref": "AMI1" },
+        "KeyName": { "Ref": "EC2KeyPair" },
+        "IamInstanceProfile": { "Ref": "AWS::NoValue" },
+        "SecurityGroups": { "Ref": "SecurityGroups" },
+        "InstanceType": { "Ref": "InstanceType" },
+        "BlockDeviceMappings": { "Ref": "AWS::NoValue" },
+        "UserData": { "Ref": "AWS::NoValue" }
+      }
+    },
+    "ASG1": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "UpdatePolicy": {
+        "AutoScalingRollingUpdate": {
+          "MinInstancesInService": "1",
+          "MaxBatchSize": "2",
+          "PauseTime": "PT2M0S"
+        }
+      },
+      "Properties": {
+        "VPCZoneIdentifier": { "Ref": "Subnets" },
+        "LaunchConfigurationName": { "Ref": "LaunchConfig1" },
+        "HealthCheckType": "EC2",
+        "HealthCheckGracePeriod": "300",
+        "MaxSize": { "Ref": "MaxInstanceCount" },
+        "MinSize": { "Ref": "MinInstanceCount" },
+        "LoadBalancerNames": { "Ref": "AWS::NoValue" },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "Application-1",
+            "PropagateAtLaunch": "true"
+          }
+        ]
+      }
+    },
+    "LaunchConfig2": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "AssociatePublicIpAddress": { "Ref": "AWS::NoValue" },
+        "ImageId": { "Ref": "AMI2" },
+        "KeyName": { "Ref": "EC2KeyPair" },
+        "IamInstanceProfile": { "Ref": "AWS::NoValue" },
+        "SecurityGroups": { "Ref": "SecurityGroups" },
+        "InstanceType": { "Ref": "InstanceType" },
+        "BlockDeviceMappings": { "Ref": "AWS::NoValue" },
+        "UserData": { "Ref": "AWS::NoValue" }
+      }
+    },
+    "ASG2": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "UpdatePolicy": {
+        "AutoScalingRollingUpdate": {
+          "MinInstancesInService": "1",
+          "MaxBatchSize": "2",
+          "PauseTime": "PT2M0S"
+        }
+      },
+      "Properties": {
+        "VPCZoneIdentifier": { "Ref": "Subnets" },
+        "LaunchConfigurationName": { "Ref": "LaunchConfig2" },
+        "HealthCheckType": "EC2",
+        "HealthCheckGracePeriod": "300",
+        "MaxSize": { "Ref": "MaxInstanceCount" },
+        "MinSize": { "Ref": "MinInstanceCount" },
+        "LoadBalancerNames": { "Ref": "AWS::NoValue" },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "Application-2",
+            "PropagateAtLaunch": "true"
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+  }
+}
